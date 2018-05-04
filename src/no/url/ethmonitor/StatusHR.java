@@ -1,3 +1,4 @@
+package no.url.ethmonitor;
 
 	public class StatusHR {
 		/*

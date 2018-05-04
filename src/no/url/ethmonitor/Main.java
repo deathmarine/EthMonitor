@@ -1,3 +1,4 @@
+package no.url.ethmonitor;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;

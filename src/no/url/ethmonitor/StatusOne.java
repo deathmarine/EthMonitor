@@ -1,3 +1,4 @@
+package no.url.ethmonitor;
 import org.json.simple.JSONArray;
 
 public class StatusOne {

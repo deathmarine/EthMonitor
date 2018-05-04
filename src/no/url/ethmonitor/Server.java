@@ -1,3 +1,4 @@
+package no.url.ethmonitor;
 
 public class Server {
 	private String IP_ADDRESS;
