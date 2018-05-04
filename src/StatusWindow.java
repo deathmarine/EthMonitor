@@ -41,7 +41,9 @@ public class StatusWindow extends JFrame{
 	public StatusWindow(Main main, int gpus){
 		this.main = main;
 		this.setTitle("Mining Status");
+		
 		//this.setUndecorated(true);
+		
 		Dimension screensize = Toolkit.getDefaultToolkit().getScreenSize();
 		this.setSize(screensize.width/2, (screensize.height/2));
 		this.setLocation(screensize.width-(screensize.width/2), 0); //screensize.height-(screensize.height/4));
@@ -56,7 +58,7 @@ public class StatusWindow extends JFrame{
 		JPanel outer = new JPanel();
 		outer.setLayout(new BoxLayout(outer, BoxLayout.PAGE_AXIS));
 		pane = new JTabbedPane();
-        //pane.setPreferredSize(new Dimension(100,100));
+		
 		JPanel panel = new JPanel();
 		panel.setLayout(new BorderLayout());
 		

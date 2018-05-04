@@ -10,19 +10,9 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JPanel;
 
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
-/**
- *
- * @author Rodrigo
- */
 public class GraphPanel extends JPanel {
-
-    private int width = 600;
-    private int heigth = 400;
-    private int padding = 25;
+	private static final long serialVersionUID = -3412371856441837916L;
+	private int padding = 25;
     private int labelPadding = 25;
     private Color lineColor = new Color(44, 102, 230, 180);
     private Color pointColor = new Color(100, 100, 100, 180);
@@ -120,11 +110,6 @@ public class GraphPanel extends JPanel {
             g2.fillOval(x, y, ovalW, ovalH);
         }
     }
-
-//    @Override
-//    public Dimension getPreferredSize() {
-//        return new Dimension(width, heigth);
-//    }
 
     private double getMinScore() {
         double minScore = Double.MAX_VALUE;
