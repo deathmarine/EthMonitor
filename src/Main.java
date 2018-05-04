@@ -2,19 +2,18 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
-import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
 import org.json.simple.JSONArray;
@@ -28,42 +27,81 @@ public class Main implements Runnable{
 	static String RESTART = "{\"id\":0,\"jsonrpc\":\"2.0\",\"method\": \"miner_restart\"}\r\n"; //Crashes Ethminer on linux
 	static String REBOOT = "{\"id\":0,\"jsonrpc\":\"2.0\",\"method\": \"miner_reboot\"}\r\n"; //Does Nothing
 	
-	static Server[] servers = new Server[] {new Server("192.168.50.77", 3333)};//, new Server("127.0.0.1", 3333)}; 
+	
 
     JSONParser parser = new JSONParser();
 	StatusWindow window;
 	static boolean RUNNING = true;
 	List<Double> rate_history = new ArrayList<Double>();
-	static int verbose = 0;
-	public Main() {	
-		File config = new File("config.ini");
-		if(!config.exists()) {
+	
+	boolean animate = true;
+	int verbose = 0;
+	int poling_rate = 1000;
+	Set<Server> servers = new HashSet<Server>(); 
+	
+	public Main(String[] args) {
+		if(args.length > 0) {
+			
+		}else {
+			File config = new File("config.ini");
+			if(!config.exists()) {
+				try {
+					System.out.println("[EthMonitor] No Configuration found, generating config.ini");
+					config.createNewFile();
+					BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(config)));
+					bw.write("#IPaddress and port of the server to pole, more than one server line can be added");
+					bw.newLine();
+					bw.write("#Example: server={ipaddress}:{port}");
+					bw.newLine();
+					bw.write("server=127.0.0.1:3333");
+					bw.newLine();
+					bw.write("#Poling rate, amount of time in ms to wait between poles");
+					bw.newLine();
+					bw.write("poling_rate=1000");
+					bw.newLine();
+					bw.write("#Verbosity of the console, 1=TX/RX info, 2=ResponseParsing");
+					bw.newLine();
+					bw.write("verbose=0");
+					bw.newLine();
+					bw.write("#Animate gauges, 1=true (default), 0=false");
+					bw.newLine();
+					bw.write("animate=0");
+					bw.newLine();
+					bw.close();				
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
 			try {
-				System.out.println("[EthMonitor] No Configuration found, generating config.ini");
-				config.createNewFile();
-				BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(config)));
-				bw.write("#IPaddress and port of the server to pole, more than one server line can be added");
-				bw.newLine();
-				bw.write("#Example: server={ipaddress}:{port}");
-				bw.newLine();
-				bw.write("server=127.0.0.1:3333");
-				bw.newLine();
-				bw.write("#Poling rate, amount of time in ms to wait between poles");
-				bw.newLine();
-				bw.write("poling_rate=1000");
-				bw.newLine();
-				bw.write("#Verbosity of the console, 1=TX/RX info, 2=ResponseParsing");
-				bw.newLine();
-				bw.write("verbose=0");
-				bw.newLine();
-				bw.close();
-				
+				BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(config)));
+				String line;
+				while((line = br.readLine()) != null){
+					if(!line.startsWith("#") && line.contains("=")) {
+						String[] kv = line.split("=");
+						if(kv[0].equalsIgnoreCase("server")) {
+							if(kv[1].contains(":")) {
+								String[] ip_port = kv[1].split(":");
+								servers.add(new Server(ip_port[0], Integer.parseInt(ip_port[1])));
+							}else {
+								servers.add(new Server(kv[1], 3333));						
+							}
+						}
+						if(kv[0].equalsIgnoreCase("poling_rate")) {
+							poling_rate = Integer.parseInt(kv[1]);
+						}
+						if(kv[0].equalsIgnoreCase("verbose")) {
+							verbose = Integer.parseInt(kv[1]);
+						}	
+						if(kv[0].equalsIgnoreCase("animate")) {
+							animate = kv[1].equalsIgnoreCase("true");
+						}						
+					}					
+				}
+				br.close();
 			} catch (IOException e) {
 				e.printStackTrace();
-			}
-			
-			System.exit(0);
-		}
+			}			
+		}		
 	}
 	
 	public static void main(String[] args) {
@@ -73,8 +111,9 @@ public class Main implements Runnable{
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		SwingUtilities.invokeLater(new Main());
-		//new Thread(new Main()).start();
+		//SwingUtilities.invokeLater(new Main(args));
+		Main main = new Main(args);
+		new Thread(main).start();
 	}
 	
 	@Override
@@ -159,8 +198,8 @@ public class Main implements Runnable{
 
 					if(window != null) {
 						window.total_hashrate.setValueAnimated(total_hashrate);
-						window.avg_fan_display.setLcdValueAnimated(avg_fan/servers.length);
-						window.avg_temp_display.setLcdValueAnimated(avg_temp/servers.length);
+						window.avg_fan_display.setLcdValueAnimated(avg_fan/servers.size());
+						window.avg_temp_display.setLcdValueAnimated(avg_temp/servers.size());
 						rate_history.add(total_hashrate);
 						if(rate_history.size() > 100) {
 							rate_history.remove(0);
