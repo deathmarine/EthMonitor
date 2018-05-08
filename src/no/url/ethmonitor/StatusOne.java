@@ -1,4 +1,5 @@
 package no.url.ethmonitor;
+
 import org.json.simple.JSONArray;
 
 public class StatusOne {
@@ -123,13 +124,13 @@ public class StatusOne {
 	public double getSharesPerMin() {
 		return ((double) this.getShares()) / (double) this.getRuntime();
 	}
-	
+
 	public int getAmtGPUs() {
 		return ((String) array.get(3)).split(";").length;
 	}
-	
+
 	public double getGPURate(int gpu) {
-		return Double.parseDouble(((String) array.get(3)).split(";")[gpu])/1000;
+		return Double.parseDouble(((String) array.get(3)).split(";")[gpu]) / 1000;
 	}
 
 	public String toString() {

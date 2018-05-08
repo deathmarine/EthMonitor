@@ -42,6 +42,7 @@ public class StatusWindow extends JFrame{
 	public StatusWindow(Main main, int gpus){
 		this.main = main;
 		this.setTitle("Mining Status");
+		this.setIconImage(Toolkit.getDefaultToolkit().getImage(this.getClass().getResource("/resources/icon32.png")));
 		
 		//this.setUndecorated(true);
 		
@@ -51,6 +52,7 @@ public class StatusWindow extends JFrame{
 		this.addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosed(WindowEvent e) {
+				Main.RUNNING = false;
 				System.exit(0);
 				
 			}
@@ -64,7 +66,7 @@ public class StatusWindow extends JFrame{
 		panel.setLayout(new BorderLayout());
 		
 
-		JPanel panel0 = new JPanel();
+		//JPanel panel0 = new JPanel();
 		total_hashrate = new Radial();
 		total_hashrate.setTitle("Total Hashrate");
 		total_hashrate.setUnitString("Mh/s");
@@ -72,8 +74,9 @@ public class StatusWindow extends JFrame{
 		total_hashrate.setLcdDecimals(2);
 		total_hashrate.setLedVisible(false);
 		total_hashrate.setPreferredSize(new Dimension(450,450));
-		panel0.add(total_hashrate);
-        panel.add(panel0, BorderLayout.LINE_START);
+		//panel0.add(total_hashrate);
+        //TODO
+		panel.add(total_hashrate, BorderLayout.LINE_START);
         
 		JPanel panel1 = new JPanel();
 		panel1.setLayout(new BoxLayout(panel1, BoxLayout.PAGE_AXIS));
@@ -172,24 +175,20 @@ public class StatusWindow extends JFrame{
 		pane.add("Graph", graph);
 		outer.add(pane);
 		/*
-		restart = new JButton("Restart");
-		restart.addActionListener(new ActionListener() {
-
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				for(Server server : Main.servers)
-					try {
-						main.connect(server.ip_address, server.port, Main.RESTART);
-					} catch (IOException | ParseException e) {
-						e.printStackTrace();
-					}
-			}
-			
-		});
-		outer.add(restart);
-		*/
+		 * restart = new JButton("Restart"); restart.addActionListener(new
+		 * ActionListener() {
+		 * 
+		 * @Override public void actionPerformed(ActionEvent arg0) { for(Server server :
+		 * Main.servers) try { main.connect(server.ip_address, server.port,
+		 * Main.RESTART); } catch (IOException | ParseException e) {
+		 * e.printStackTrace(); } }
+		 * 
+		 * }); outer.add(restart);
+		 */
 		this.getContentPane().add(outer);
 		this.setVisible(true);
+		
+		
 	}
 	
 }
