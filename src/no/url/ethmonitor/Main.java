@@ -69,7 +69,13 @@ public class Main implements Runnable {
 
 	JSONParser parser = new JSONParser();
 	StatusWindow window;
-	List<Double> rate_history = new ArrayList<Double>();
+	
+	//Maybe this would be a good time to consider databasing
+	
+	List<Status> main_history = new ArrayList<Status>();
+	List<Double> main_temp_history = new ArrayList<Double>();
+	List<Double> main_fan_history = new ArrayList<Double>();
+	List<Double> main_watt_history = new ArrayList<Double>();
 	
 	//Settings
 	CheckboxMenuItem animate = new CheckboxMenuItem("Animate");
@@ -267,6 +273,8 @@ public class Main implements Runnable {
 							Object obj = json_obj.get("result");
 							if (obj instanceof JSONObject) {
 								StatusHR status = new StatusHR((JSONObject) obj);
+								main_history.add(status);
+								
 								if (window != null) {
 									for (int i = gpu_amt; i < status.getAmtGPUs() + gpu_amt; i++) {
 										if (animate.getState()) {
@@ -336,6 +344,7 @@ public class Main implements Runnable {
 							if (obj instanceof JSONArray) {
 								JSONArray jarray = (JSONArray) obj;
 								StatusOne status = new StatusOne(jarray);
+								main_history.add(status);
 								if (window != null) {
 									for (int i = gpu_amt; i < status.getAmtGPUs() + gpu_amt; i++) {
 										if (animate.getState()) {
@@ -402,9 +411,17 @@ public class Main implements Runnable {
 							window.total_hashrate.setValueAnimated(total_hashrate);
 							window.avg_fan_display.setLcdValueAnimated(avg_fan / servers.size());
 							window.avg_temp_display.setLcdValueAnimated(avg_temp / servers.size());
-							window.total_wattage_display.setLcdValueAnimated(total_watt);
-							rate_history.add(total_hashrate);
-							window.graph.setScores(rate_history);
+							if(detailed_result)
+								window.total_wattage_display.setLcdValueAnimated(total_watt);
+							ArrayList<Double> list = new ArrayList<Double>();
+							for(Object obj : main_history) {
+								if(obj instanceof StatusHR) 
+									list.add((double) ((StatusHR) obj).getHashrate());
+								if(obj instanceof StatusOne) 
+									list.add((double) ((StatusOne) obj).getHashrate());
+							}
+							window.main_hashrate_graph.setScores(list);
+							
 							window.running_time.setLcdValueAnimated(longest_time);
 							window.shares.setLcdValueAnimated(total_shares);
 							window.shares_per_min.setLcdValueAnimated(largest_share);
@@ -412,16 +429,52 @@ public class Main implements Runnable {
 							window.total_hashrate.setValue(total_hashrate);
 							window.avg_fan_display.setLcdValue(avg_fan / servers.size());
 							window.avg_temp_display.setLcdValue(avg_temp / servers.size());
-							window.total_wattage_display.setLcdValue(total_watt);
-							rate_history.add(total_hashrate);
-							window.graph.setScores(rate_history);
+							if(detailed_result)
+								window.total_wattage_display.setLcdValue(total_watt);
+							
+							ArrayList<Double> hashrate = new ArrayList<Double>();
+							for(Object obj : main_history) {
+								if(obj instanceof StatusHR) 
+									hashrate.add((double) ((StatusHR) obj).getHashrate());
+								if(obj instanceof StatusOne) 
+									hashrate.add((double) ((StatusOne) obj).getHashrate());
+							}
+							window.main_hashrate_graph.setScores(hashrate);
+							
+							ArrayList<Double> temperature = new ArrayList<Double>();
+							for(Object obj : main_history) {
+								if(obj instanceof StatusHR) 
+									temperature.add((double) ((StatusHR) obj).getAvgTemp());
+								if(obj instanceof StatusOne) 
+									temperature.add((double) ((StatusOne) obj).getAvgTemp());
+							}
+							window.main_temperature_graph.setScores(temperature);
+							
+							ArrayList<Double> fan = new ArrayList<Double>();
+							for(Object obj : main_history) {
+								if(obj instanceof StatusHR) 
+									fan.add((double) ((StatusHR) obj).getAvgFan());
+								if(obj instanceof StatusOne) 
+									fan.add((double) ((StatusOne) obj).getAvgFan());
+							}
+							window.main_fan_graph.setScores(fan);
+
+							if(detailed_result) {
+								ArrayList<Double> wattage = new ArrayList<Double>();
+								for(Object obj : main_history) {
+									if(obj instanceof StatusHR) 
+										wattage.add((double) ((StatusHR) obj).getTotalPower());
+								}
+								window.main_wattage_graph.setScores(wattage);								
+							}
+							
 							window.running_time.setLcdValue(longest_time);
 							window.shares.setLcdValue(total_shares);
 							window.shares_per_min.setLcdValue(largest_share);
 							
 						}
-						if (rate_history.size() > graphing_points) {
-							rate_history.remove(0);
+						if (main_history.size() > graphing_points) {
+							main_history.remove(0);
 						}
 					}
 					if (once) {

@@ -2,16 +2,8 @@ package no.url.ethmonitor;
 
 import org.json.simple.JSONArray;
 
-public class StatusOne {
+public class StatusOne extends Status{
 	private JSONArray array;
-	private String SOFTWARE_VERSION;
-	private int RUNTIME;
-	private float HASHRATE;
-	private int SHARES;
-	private int INVALID;
-	private double AVG_TEMP = 0;
-	private double AVG_FAN = 0;
-	private String POOL;
 	/*
 	response[0] = ethminer_get_buildinfo()->project_version;  //miner version.
 	response[1] = toString(runningTime.count()); // running time, in minutes.
@@ -55,62 +47,6 @@ public class StatusOne {
 
 	public void setJSONArray(JSONArray array) {
 		this.array = array;
-	}
-
-	public String getVersion() {
-		return SOFTWARE_VERSION;
-	}
-
-	public void setVersion(String sOFTWARE_VERSION) {
-		SOFTWARE_VERSION = sOFTWARE_VERSION;
-	}
-
-	public int getRuntime() {
-		return RUNTIME;
-	}
-
-	public void setRuntime(int rUNTIME) {
-		RUNTIME = rUNTIME;
-	}
-
-	public float getHashrate() {
-		return HASHRATE;
-	}
-
-	public void setHashrate(float hASHRATE) {
-		HASHRATE = hASHRATE;
-	}
-
-	public int getShares() {
-		return SHARES;
-	}
-
-	public void setShares(int sHARES) {
-		SHARES = sHARES;
-	}
-
-	public int getInvalid() {
-		return INVALID;
-	}
-
-	public void setInvalid(int iNVALID) {
-		INVALID = iNVALID;
-	}
-
-	public double getAvgTemp() {
-		return AVG_TEMP;
-	}
-
-	public double getAvgFan() {
-		return AVG_FAN;
-	}
-
-	public String getPool() {
-		return POOL;
-	}
-
-	public void setPool(String pOOL) {
-		POOL = pOOL;
 	}
 
 	public int getSpecificTemp(int gpu) {

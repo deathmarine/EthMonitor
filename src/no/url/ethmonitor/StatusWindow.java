@@ -18,7 +18,9 @@ import eu.hansolo.steelseries.gauges.Radial;
 
 public class StatusWindow extends JFrame{
 	private static final long serialVersionUID = 742476492963869922L;
-	JTabbedPane pane;
+	JTabbedPane master_pane;
+	JTabbedPane main_pane;
+	JTabbedPane[] gpu_panes;
 	JButton restart;
 	
 	Radial total_hashrate;
@@ -35,7 +37,10 @@ public class StatusWindow extends JFrame{
 	List<DisplaySingle> gpu_fan = new ArrayList<DisplaySingle>();
 	List<DisplaySingle> gpu_watt = new ArrayList<DisplaySingle>();
 	
-	GraphPanel graph;
+	GraphPanel main_hashrate_graph;
+	GraphPanel main_temperature_graph;
+	GraphPanel main_fan_graph;
+	GraphPanel main_wattage_graph;
 	
 	Main main;
 	
@@ -47,7 +52,7 @@ public class StatusWindow extends JFrame{
 		//this.setUndecorated(true);
 		
 		Dimension screensize = Toolkit.getDefaultToolkit().getScreenSize();
-		this.setSize(screensize.width/2, (screensize.height/2));
+		this.setSize(screensize.width/2, (screensize.height/2)); //May not work for smaller screen sizes
 		this.setLocation(screensize.width-(screensize.width/2), 0); //screensize.height-(screensize.height/4));
 		this.addWindowListener(new WindowAdapter() {
 			@Override
@@ -60,7 +65,8 @@ public class StatusWindow extends JFrame{
 		});
 		JPanel outer = new JPanel();
 		outer.setLayout(new BoxLayout(outer, BoxLayout.PAGE_AXIS));
-		pane = new JTabbedPane();
+		master_pane = new JTabbedPane();
+		main_pane = new JTabbedPane();
 		
 		JPanel panel = new JPanel();
 		panel.setLayout(new BorderLayout());
@@ -70,7 +76,7 @@ public class StatusWindow extends JFrame{
 		total_hashrate = new Radial();
 		total_hashrate.setTitle("Total Hashrate");
 		total_hashrate.setUnitString("Mh/s");
-		total_hashrate.setMaxValue(200);
+		total_hashrate.setMaxValue(200); //This may need to be configurable
 		total_hashrate.setLcdDecimals(2);
 		total_hashrate.setLedVisible(false);
 		total_hashrate.setPreferredSize(new Dimension(450,450));
@@ -94,13 +100,15 @@ public class StatusWindow extends JFrame{
         avg_fan_display.setPreferredSize(new Dimension(450,50));
         avg_fan_display.setLcdUnitString(" %");
         panel1.add(avg_fan_display);
-        panel1.add(new JLabel("Total Wattage"));
         
-        total_wattage_display = new DisplaySingle();
-        total_wattage_display.setPreferredSize(new Dimension(450,50));
-        total_wattage_display.setLcdUnitString(" W");
-        panel1.add(total_wattage_display);
-		
+
+        if(main.detailed_result) {
+	        panel1.add(new JLabel("Total Wattage"));
+	        total_wattage_display = new DisplaySingle();
+	        total_wattage_display.setPreferredSize(new Dimension(450,50));
+	        total_wattage_display.setLcdUnitString(" W");
+	        panel1.add(total_wattage_display);
+        }
         panel1.add(new JLabel("Running Time"));
         running_time = new DisplaySingle();
         running_time.setPreferredSize(new Dimension(450,50));
@@ -125,8 +133,25 @@ public class StatusWindow extends JFrame{
         panel.add(panel1, BorderLayout.LINE_END);
     
         
-
-		pane.addTab("Main", panel);
+        main_pane.addTab("Status", panel);
+        
+        main_hashrate_graph = new GraphPanel(new ArrayList<Double>());
+        main_pane.add("Hashrate", main_hashrate_graph);
+        
+        main_temperature_graph = new GraphPanel(new ArrayList<Double>());
+        main_pane.add("Temp", main_temperature_graph);
+        
+        main_fan_graph = new GraphPanel(new ArrayList<Double>());
+        main_pane.add("Fans", main_fan_graph);
+        if(main.detailed_result) {
+            main_wattage_graph = new GraphPanel(new ArrayList<Double>());
+            main_pane.add("Wattage", main_wattage_graph);        	
+        }
+        
+        
+        
+		master_pane.addTab("Main", main_pane);
+		
 		for(int i=0;i<gpus;i++) {
 			JPanel _panel = new JPanel();
 			_panel.setLayout(new BorderLayout());
@@ -158,22 +183,20 @@ public class StatusWindow extends JFrame{
 	        gpu_fan.add(fan_display);
 	        gpu_panel.add(fan_display);
 	        
-	        gpu_panel.add(new JLabel("GPU "+i+" Wattage"));
-	        DisplaySingle wattage_display = new DisplaySingle();
-	        wattage_display.setPreferredSize(new Dimension(450,50));
-	        wattage_display.setLcdUnitString(" W");
-	        gpu_watt.add(wattage_display);
-	        gpu_panel.add(wattage_display);
-	        
+
+	        if(main.detailed_result) {
+		        gpu_panel.add(new JLabel("GPU "+i+" Wattage"));
+		        DisplaySingle wattage_display = new DisplaySingle();
+		        wattage_display.setPreferredSize(new Dimension(450,50));
+		        wattage_display.setLcdUnitString(" W");
+		        gpu_watt.add(wattage_display);
+		        gpu_panel.add(wattage_display);
+	        }
 	        _panel.add(gpu_panel, BorderLayout.LINE_END);
-	        pane.add("GPU "+i, _panel);
+	        master_pane.add("GPU "+i, _panel);
 			
 		}
-        
-
-		graph = new GraphPanel(new ArrayList<Double>());
-		pane.add("Graph", graph);
-		outer.add(pane);
+		outer.add(master_pane);
 		/*
 		 * restart = new JButton("Restart"); restart.addActionListener(new
 		 * ActionListener() {
