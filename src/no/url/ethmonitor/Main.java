@@ -127,7 +127,7 @@ public class Main implements Runnable {
 					bw.newLine();
 					bw.write("trayicon.question=true");
 					bw.newLine();
-					bw.write("Detailed results, includes wattage");
+					bw.write("#Detailed results, includes wattage");
 					bw.newLine();
 					bw.write("detailed=true");
 					bw.newLine();
@@ -349,6 +349,7 @@ public class Main implements Runnable {
 								main_history.add(status);
 								if (window != null) {
 									for (int i = gpu_amt; i < status.getAmtGPUs() + gpu_amt; i++) {
+										
 										if (animate.getState()) {
 											window.gpu_hashrate.get(i).setValueAnimated(status.getGPURate(i - gpu_amt));
 											window.gpu_fan.get(i).setLcdValueAnimated(status.getSpecificFan(i - gpu_amt));
@@ -357,6 +358,42 @@ public class Main implements Runnable {
 											window.gpu_hashrate.get(i).setValue(status.getGPURate(i - gpu_amt));
 											window.gpu_fan.get(i).setLcdValue(status.getSpecificFan(i - gpu_amt));
 											window.gpu_temp.get(i).setLcdValue(status.getSpecificTemp(i - gpu_amt));
+										}
+
+										ArrayList<Double> hashrate = new ArrayList<Double>();
+										for(Object obj1 : main_history) {
+											if(obj1 instanceof StatusHR) 
+												hashrate.add((double) ((StatusHR) obj1).getGPURate(i));
+											if(obj1 instanceof StatusOne) 
+												hashrate.add((double) ((StatusOne) obj1).getGPURate(i));
+										}
+										window.gpu_hashrate_graph.get(i).setScores(hashrate);
+										
+										ArrayList<Double> temperature = new ArrayList<Double>();
+										for(Object obj1 : main_history) {
+											if(obj1 instanceof StatusHR) 
+												temperature.add((double) ((StatusHR) obj1).getSpecificTemp(i));
+											if(obj1 instanceof StatusOne) 
+												temperature.add((double) ((StatusOne) obj1).getSpecificTemp(i));
+										}
+										window.gpu_temperature_graph.get(i).setScores(temperature);
+										
+										ArrayList<Double> fan = new ArrayList<Double>();
+										for(Object obj1 : main_history) {
+											if(obj1 instanceof StatusHR) 
+												fan.add((double) ((StatusHR) obj1).getSpecificFan(i));
+											if(obj1 instanceof StatusOne) 
+												fan.add((double) ((StatusOne) obj1).getSpecificFan(i));
+										}
+										window.gpu_fan_graph.get(i).setScores(fan);
+
+										if(detailed_result) {
+											ArrayList<Double> wattage = new ArrayList<Double>();
+											for(Object obj1 : main_history) {
+												if(obj1 instanceof StatusHR) 
+													wattage.add((double) ((StatusHR) obj1).getSpecificPower(i));
+											}
+											window.gpu_wattage_graph.get(i).setScores(wattage);								
 										}
 									}
 								}
@@ -433,48 +470,47 @@ public class Main implements Runnable {
 							window.avg_temp_display.setLcdValue(avg_temp / servers.size());
 							if(detailed_result)
 								window.total_wattage_display.setLcdValue(total_watt);
-							
-							ArrayList<Double> hashrate = new ArrayList<Double>();
-							for(Object obj : main_history) {
-								if(obj instanceof StatusHR) 
-									hashrate.add((double) ((StatusHR) obj).getHashrate());
-								if(obj instanceof StatusOne) 
-									hashrate.add((double) ((StatusOne) obj).getHashrate());
-							}
-							window.main_hashrate_graph.setScores(hashrate);
-							
-							ArrayList<Double> temperature = new ArrayList<Double>();
-							for(Object obj : main_history) {
-								if(obj instanceof StatusHR) 
-									temperature.add((double) ((StatusHR) obj).getAvgTemp());
-								if(obj instanceof StatusOne) 
-									temperature.add((double) ((StatusOne) obj).getAvgTemp());
-							}
-							window.main_temperature_graph.setScores(temperature);
-							
-							ArrayList<Double> fan = new ArrayList<Double>();
-							for(Object obj : main_history) {
-								if(obj instanceof StatusHR) 
-									fan.add((double) ((StatusHR) obj).getAvgFan());
-								if(obj instanceof StatusOne) 
-									fan.add((double) ((StatusOne) obj).getAvgFan());
-							}
-							window.main_fan_graph.setScores(fan);
-
-							if(detailed_result) {
-								ArrayList<Double> wattage = new ArrayList<Double>();
-								for(Object obj : main_history) {
-									if(obj instanceof StatusHR) 
-										wattage.add((double) ((StatusHR) obj).getTotalPower());
-								}
-								window.main_wattage_graph.setScores(wattage);								
-							}
-							
 							window.running_time.setLcdValue(longest_time);
 							window.shares.setLcdValue(total_shares);
 							window.shares_per_min.setLcdValue(largest_share);
 							
 						}
+						ArrayList<Double> hashrate = new ArrayList<Double>();
+						for(Object obj : main_history) {
+							if(obj instanceof StatusHR) 
+								hashrate.add((double) ((StatusHR) obj).getHashrate());
+							if(obj instanceof StatusOne) 
+								hashrate.add((double) ((StatusOne) obj).getHashrate());
+						}
+						window.main_hashrate_graph.setScores(hashrate);
+						
+						ArrayList<Double> temperature = new ArrayList<Double>();
+						for(Object obj : main_history) {
+							if(obj instanceof StatusHR) 
+								temperature.add((double) ((StatusHR) obj).getAvgTemp());
+							if(obj instanceof StatusOne) 
+								temperature.add((double) ((StatusOne) obj).getAvgTemp());
+						}
+						window.main_temperature_graph.setScores(temperature);
+						
+						ArrayList<Double> fan = new ArrayList<Double>();
+						for(Object obj : main_history) {
+							if(obj instanceof StatusHR) 
+								fan.add((double) ((StatusHR) obj).getAvgFan());
+							if(obj instanceof StatusOne) 
+								fan.add((double) ((StatusOne) obj).getAvgFan());
+						}
+						window.main_fan_graph.setScores(fan);
+
+						if(detailed_result) {
+							ArrayList<Double> wattage = new ArrayList<Double>();
+							for(Object obj : main_history) {
+								if(obj instanceof StatusHR) 
+									wattage.add((double) ((StatusHR) obj).getTotalPower());
+							}
+							window.main_wattage_graph.setScores(wattage);								
+						}
+						
 						if (main_history.size() > graph_points) {
 							main_history.remove(0);
 						}

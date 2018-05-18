@@ -42,6 +42,12 @@ public class StatusWindow extends JFrame{
 	GraphPanel main_fan_graph;
 	GraphPanel main_wattage_graph;
 	
+	List<GraphPanel> gpu_hashrate_graph = new ArrayList<GraphPanel>();
+	List<GraphPanel> gpu_temperature_graph = new ArrayList<GraphPanel>();
+	List<GraphPanel> gpu_fan_graph = new ArrayList<GraphPanel>();
+	List<GraphPanel> gpu_wattage_graph = new ArrayList<GraphPanel>();
+	
+	
 	Main main;
 	
 	public StatusWindow(Main main, int gpus){
@@ -147,13 +153,12 @@ public class StatusWindow extends JFrame{
             main_wattage_graph = new GraphPanel(new ArrayList<Double>());
             main_pane.add("Wattage", main_wattage_graph);        	
         }
-        
-        
-        
 		master_pane.addTab("Main", main_pane);
 		
 		for(int i=0;i<gpus;i++) {
+			JTabbedPane gpu_tab = new JTabbedPane();
 			JPanel _panel = new JPanel();
+			
 			_panel.setLayout(new BorderLayout());
 			
 			
@@ -193,7 +198,28 @@ public class StatusWindow extends JFrame{
 		        gpu_panel.add(wattage_display);
 	        }
 	        _panel.add(gpu_panel, BorderLayout.LINE_END);
-	        master_pane.add("GPU "+i, _panel);
+	        
+	        gpu_tab.addTab("Status", _panel);
+	        
+	        GraphPanel gpu_hashrate = new GraphPanel(new ArrayList<Double>());
+	        gpu_tab.add("Hashrate", gpu_hashrate);
+	        gpu_hashrate_graph.add(gpu_hashrate);
+	        
+	        GraphPanel gpu_temperature = new GraphPanel(new ArrayList<Double>());
+	        gpu_tab.add("Temp", gpu_temperature);
+	    	gpu_temperature_graph.add(gpu_temperature);
+	    	
+	        GraphPanel gpu_fan = new GraphPanel(new ArrayList<Double>());
+	        gpu_tab.add("Fan", gpu_fan);
+	    	gpu_fan_graph.add(gpu_fan);
+	    	
+	    	if(main.detailed_result) {  	
+		        GraphPanel gpu_watt = new GraphPanel(new ArrayList<Double>());
+		        gpu_tab.add("Fan", gpu_watt);
+		    	gpu_wattage_graph.add(gpu_watt);
+	    	}
+	        
+	        master_pane.add("GPU "+i, gpu_tab);
 			
 		}
 		outer.add(master_pane);

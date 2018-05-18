@@ -42,10 +42,14 @@ poling_rate=1000
 graph_points=100
 #Verbosity of the console, 1=TX/RX info, 2=ResponseParsing
 verbose=0
-#Animate gauges, 1=true (default), 0=false
-animate=false
-#Enable Tray Icon, 1=true (default), 0=false
+#Animate gauges, true (default), false
+animate=true
+#Enable Tray Icon, true (default), false
 trayicon=true
+#Enable "AreYouSure" Question for exiting.
+trayicon.question=true
+#Detailed results, includes wattage
+detailed=false
 ```
 
 
