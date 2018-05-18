@@ -84,7 +84,7 @@ public class Main implements Runnable {
 	boolean detailed_result = false;
 	int verbose = 0;
 	int poling_rate = 1000;
-	int graphing_points = 100;
+	int graph_points = 100;
 	Set<Server> servers = new HashSet<Server>();
 
 	public Main(String[] args) {
@@ -153,6 +153,8 @@ public class Main implements Runnable {
 						switch (kv[0]) {
 							case "poling_rate":
 								poling_rate = Integer.parseInt(kv[1]);
+							case "graph_points":
+								graph_points = Integer.parseInt(kv[1]);								
 							case "verbose":
 								verbose = Integer.parseInt(kv[1]);
 							case "animate":
@@ -473,7 +475,7 @@ public class Main implements Runnable {
 							window.shares_per_min.setLcdValue(largest_share);
 							
 						}
-						if (main_history.size() > graphing_points) {
+						if (main_history.size() > graph_points) {
 							main_history.remove(0);
 						}
 					}
