@@ -32,8 +32,12 @@ public class StatusOne extends Status{
 		for (String s : ((String) array.get(6)).split(" ")) {
 			c++;
 			String[] tuple = s.split(";");
-			AVG_TEMP += Double.parseDouble(tuple[0]);
-			AVG_FAN += Double.parseDouble(tuple[1]);
+			if (tuple.length > 1) {
+				if(tuple[0].length() > 0)
+					AVG_TEMP += Double.parseDouble(tuple[0]);
+				if(tuple[1].length() > 0)
+					AVG_FAN += Double.parseDouble(tuple[1]);
+			}
 		}
 		AVG_TEMP = AVG_TEMP / c;
 		AVG_FAN = AVG_FAN / c;

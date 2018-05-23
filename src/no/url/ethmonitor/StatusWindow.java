@@ -48,6 +48,7 @@ public class StatusWindow extends JFrame{
 	List<GraphPanel> gpu_wattage_graph = new ArrayList<GraphPanel>();
 	
 	
+	
 	Main main;
 	
 	public StatusWindow(Main main, int gpus){
@@ -82,7 +83,7 @@ public class StatusWindow extends JFrame{
 		total_hashrate = new Radial();
 		total_hashrate.setTitle("Total Hashrate");
 		total_hashrate.setUnitString("Mh/s");
-		total_hashrate.setMaxValue(200); //This may need to be configurable
+		total_hashrate.setMaxValue(main.gauge_max_status);
 		total_hashrate.setLcdDecimals(2);
 		total_hashrate.setLedVisible(false);
 		total_hashrate.setPreferredSize(new Dimension(450,450));
@@ -165,6 +166,7 @@ public class StatusWindow extends JFrame{
 			Radial hashrate = new Radial();
 			hashrate.setTitle("GPU Hashrate");
 			hashrate.setUnitString("Mh/s");
+			hashrate.setMaxValue(main.gauge_max_gpu);
 			hashrate.setLcdDecimals(2);
 			hashrate.setPreferredSize(new Dimension(450,450));
 	        gpu_hashrate.add(hashrate);
@@ -215,7 +217,7 @@ public class StatusWindow extends JFrame{
 	    	
 	    	if(main.detailed_result) {  	
 		        GraphPanel gpu_watt = new GraphPanel(new ArrayList<Double>());
-		        gpu_tab.add("Fan", gpu_watt);
+		        gpu_tab.add("Watt", gpu_watt);
 		    	gpu_wattage_graph.add(gpu_watt);
 	    	}
 	        

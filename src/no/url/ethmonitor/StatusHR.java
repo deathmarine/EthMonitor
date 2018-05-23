@@ -25,27 +25,33 @@ public class StatusHR extends Status{
 				this.setInvalid((this.safeLongToInt((long) object.get("ethinvalid"))));
 			}
 			if(object.containsKey("fanpercentages")) {
-				JSONArray array = (JSONArray) object.get("fanpercentages");
-				for(int i=0;i<array.size();i++) {
-					int v = Integer.valueOf(String.valueOf((long) array.get(i))); //Boy do I hate doing this but the JSON Library makes me
-					AVG_FAN += v;
+				JSONArray array = (JSONArray) object.get("fanpercentages"); //null?
+				if(array != null) {
+					for(int i=0;i<array.size();i++) {
+						int v = Integer.valueOf(String.valueOf((long) array.get(i))); //Boy do I hate doing this but the JSON Library makes me
+						AVG_FAN += v;
+					}
+					AVG_FAN = AVG_FAN / (double) array.size();					
 				}
-				AVG_FAN = AVG_FAN / (double) array.size();
 			}
 			if(object.containsKey("powerusages")) {
 				JSONArray array = (JSONArray) object.get("powerusages");
-				for(int i=0;i<array.size();i++) {
-					double v = (double) array.get(i);
-					TOTAL_POWER += v;
+				if(array != null) {
+					for(int i=0;i<array.size();i++) {
+						double v = (double) array.get(i);
+						TOTAL_POWER += v;
+					}					
 				}
 			}
 			if(object.containsKey("temperatures")) {
 				JSONArray array = (JSONArray) object.get("temperatures");
-				for(int i=0;i<array.size();i++) {
-					int v = Integer.valueOf(String.valueOf((long) array.get(i)));
-					AVG_TEMP += v;
+				if(array != null) {
+					for(int i=0;i<array.size();i++) {
+						int v = Integer.valueOf(String.valueOf((long) array.get(i)));
+						AVG_TEMP += v;
+					}
+					AVG_TEMP = AVG_TEMP / (double) array.size();					
 				}
-				AVG_TEMP = AVG_TEMP / (double) array.size();
 			}
 			
 			if(object.containsKey("pooladdrs")) {

@@ -6,7 +6,6 @@ import java.awt.Cursor;
 import java.awt.Desktop;
 import java.awt.Font;
 import java.awt.Image;
-import java.awt.Menu;
 import java.awt.MenuItem;
 import java.awt.PopupMenu;
 import java.awt.SystemTray;
@@ -32,6 +31,8 @@ import java.net.Socket;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -71,11 +72,12 @@ public class Main implements Runnable {
 	StatusWindow window;
 	
 	//Maybe this would be a good time to consider databasing
-	
 	List<Status> main_history = new ArrayList<Status>();
 	List<Double> main_temp_history = new ArrayList<Double>();
 	List<Double> main_fan_history = new ArrayList<Double>();
 	List<Double> main_watt_history = new ArrayList<Double>();
+	List<Double> main_share_per_seg = new ArrayList<Double>();
+	
 	
 	//Settings
 	CheckboxMenuItem animate = new CheckboxMenuItem("Animate");
@@ -85,8 +87,15 @@ public class Main implements Runnable {
 	int verbose = 0;
 	int poling_rate = 1000;
 	int graph_points = 100;
+	int gauge_max_status = 200; //Should autoscale but meh
+	int gauge_max_gpu = 50; //Should autoscale but meh
+	
+	
 	Set<Server> servers = new HashSet<Server>();
-
+	
+	double count_shares = 0; //ten min interval count. Let's see if this can match the pool
+	boolean count_reset = false;
+	
 	public Main(String[] args) {
 		if (args.length > 0) {
 
@@ -97,40 +106,29 @@ public class Main implements Runnable {
 					System.out.println("[EthMonitor] No Configuration found, generating config.ini");
 					config.createNewFile();
 					BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(config)));
-					bw.write("#IPaddress and port of the server to pole, more than one server line can be added");
-					bw.newLine();
-					bw.write("#Example: server={ipaddress}:{port}");
-					bw.newLine();
-					bw.write("server=127.0.0.1:3333");
-					bw.newLine();
-					bw.write("#Poling rate, amount of time in ms to wait between poles");
-					bw.newLine();
-					bw.write("poling_rate=1000");
-					bw.newLine();
-					bw.write("#Graphing Points (default:100)");
-					bw.newLine();
-					bw.write("graph_points=100");
-					bw.newLine();
-					bw.write("#Verbosity of the console, 1=TX/RX info, 2=ResponseParsing");
-					bw.newLine();
-					bw.write("verbose=0");
-					bw.newLine();
-					bw.write("#Animate gauges, true (default), false");
-					bw.newLine();
-					bw.write("animate=true");
-					bw.newLine();
-					bw.write("#Enable Tray Icon, true (default), false");
-					bw.newLine();
-					bw.write("trayicon=true");
-					bw.newLine();
-					bw.write("#Enable \"AreYouSure\" Question for exiting.");
-					bw.newLine();
-					bw.write("trayicon.question=true");
-					bw.newLine();
-					bw.write("#Detailed results, includes wattage");
-					bw.newLine();
-					bw.write("detailed=true");
-					bw.newLine();
+					bw.write("## Configuration ##"+ 
+							"#IPaddress and port of the server to pole, more than one server line can be added\r\n" + 
+							"#Example: server={ipaddress}:{port}\r\n" + 
+							"server=127.0.0.1:3333\r\n\r\n" +
+							"#Enable Tray Icon, true (default), false\r\n" + 
+							"trayicon=true\r\n" + 
+							"#Enable \"AreYouSure\" Question for exiting.\r\n" + 
+							"trayicon.question=true\r\n" + 
+							"#Detailed results, includes wattage\r\n" + 
+							"detailed=true\r\n" +
+					
+							"##   Appearance   ##\r\n" + 
+							"#Max hashrate, status gauge (default:200)\r\n" + 
+							"gauge_max.status=200\r\n" + 
+							"#Max hashrate, gpu gauge (default:50)\r\n" + 
+							"gauge_max.gpu=50\r\n"+
+							"#Poling rate, amount of time in ms to wait between poles\r\n" + 
+							"poling_rate=1000\r\n" +
+							"#Graphing Points (default:100)\r\n" + 
+							"graph_points=100" + "#Verbosity of the console, 1=TX/RX info, 2=ResponseParsing\r\n" + 
+							"verbose=0\r\n" +
+							"#Animate gauges, true (default), false\r\n" + 
+							"animate=true\r\n");
 					bw.close();
 				} catch (IOException e) {
 					e.printStackTrace();
@@ -151,20 +149,24 @@ public class Main implements Runnable {
 							}
 						}
 						switch (kv[0]) {
+							case "gauge_max.status":
+								gauge_max_status = Integer.parseInt(kv[1].trim());
+							case "gauge_max.gpu":
+								gauge_max_gpu = Integer.parseInt(kv[1].trim());
 							case "poling_rate":
-								poling_rate = Integer.parseInt(kv[1]);
+								poling_rate = Integer.parseInt(kv[1].trim());
 							case "graph_points":
-								graph_points = Integer.parseInt(kv[1]);								
+								graph_points = Integer.parseInt(kv[1].trim());								
 							case "verbose":
-								verbose = Integer.parseInt(kv[1]);
+								verbose = Integer.parseInt(kv[1].trim());
 							case "animate":
-								animate.setState(kv[1].equalsIgnoreCase("true"));
+								animate.setState(kv[1].trim().equalsIgnoreCase("true"));
 							case "trayicon":
-								tray = kv[1].equalsIgnoreCase("true");
+								tray = kv[1].trim().equalsIgnoreCase("true");
 							case "trayicon.question":
-								tray_question = kv[1].equalsIgnoreCase("true");
+								tray_question = kv[1].trim().equalsIgnoreCase("true");
 							case "detailed":
-								detailed_result = kv[1].equalsIgnoreCase("true");
+								detailed_result = kv[1].trim().equalsIgnoreCase("true");
 						}
 					}
 				}
@@ -240,20 +242,21 @@ public class Main implements Runnable {
 
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+			// SwingUtilities.invokeLater(new Main(args));
+			Main main = new Main(args);
+			new Thread(main).start();
 		} catch (Exception e) {
+			Main.showExceptionDialog("Error", e);
 			e.printStackTrace();
 		}
-		// SwingUtilities.invokeLater(new Main(args));
-		Main main = new Main(args);
-		new Thread(main).start();
 	}
 
 	@Override
 	public void run() {
 
 		long time = System.currentTimeMillis();
-		// boolean flip = true;
 		boolean once = true;
+		int shares = 0;
 
 		try {
 			while (RUNNING) {
@@ -272,6 +275,7 @@ public class Main implements Runnable {
 						if(detailed_result) {
 							JSONObject json_obj = (JSONObject) parser
 									.parse(this.connect(server.getIPAddress(), server.getPort(), DETAILED_STATUS));
+							//Connection check!
 							Object obj = json_obj.get("result");
 							if (obj instanceof JSONObject) {
 								StatusHR status = new StatusHR((JSONObject) obj);
@@ -290,6 +294,40 @@ public class Main implements Runnable {
 											window.gpu_watt.get(i).setLcdValue(status.getSpecificPower(i - gpu_amt));
 											window.gpu_temp.get(i).setLcdValue(status.getSpecificTemp(i - gpu_amt));
 										}
+
+										ArrayList<Double> hashrate = new ArrayList<Double>();
+										for(Object obj1 : main_history) {
+											if(obj1 instanceof StatusHR) 
+												hashrate.add((double) ((StatusHR) obj1).getGPURate(i));
+											if(obj1 instanceof StatusOne) 
+												hashrate.add((double) ((StatusOne) obj1).getGPURate(i));
+										}
+										window.gpu_hashrate_graph.get(i).setScores(hashrate);
+										
+										ArrayList<Double> temperature = new ArrayList<Double>();
+										for(Object obj1 : main_history) {
+											if(obj1 instanceof StatusHR) 
+												temperature.add((double) ((StatusHR) obj1).getSpecificTemp(i));
+											if(obj1 instanceof StatusOne) 
+												temperature.add((double) ((StatusOne) obj1).getSpecificTemp(i));
+										}
+										window.gpu_temperature_graph.get(i).setScores(temperature);
+										
+										ArrayList<Double> fan = new ArrayList<Double>();
+										for(Object obj1 : main_history) {
+											if(obj1 instanceof StatusHR) 
+												fan.add((double) ((StatusHR) obj1).getSpecificFan(i));
+											if(obj1 instanceof StatusOne) 
+												fan.add((double) ((StatusOne) obj1).getSpecificFan(i));
+										}
+										window.gpu_fan_graph.get(i).setScores(fan);
+										
+										ArrayList<Double> wattage = new ArrayList<Double>();
+										for(Object obj1 : main_history) {
+											if(obj1 instanceof StatusHR) 
+												wattage.add((double) ((StatusHR) obj1).getSpecificPower(i));
+										}
+										window.gpu_wattage_graph.get(i).setScores(wattage);		
 									}
 								}
 								if (verbose >= 2) {
@@ -337,7 +375,6 @@ public class Main implements Runnable {
 								
 								
 							}
-							
 						}else {
 							
 							JSONObject json_obj = (JSONObject) parser
@@ -386,15 +423,6 @@ public class Main implements Runnable {
 												fan.add((double) ((StatusOne) obj1).getSpecificFan(i));
 										}
 										window.gpu_fan_graph.get(i).setScores(fan);
-
-										if(detailed_result) {
-											ArrayList<Double> wattage = new ArrayList<Double>();
-											for(Object obj1 : main_history) {
-												if(obj1 instanceof StatusHR) 
-													wattage.add((double) ((StatusHR) obj1).getSpecificPower(i));
-											}
-											window.gpu_wattage_graph.get(i).setScores(wattage);								
-										}
 									}
 								}
 								if (verbose >= 2) {
@@ -439,6 +467,12 @@ public class Main implements Runnable {
 							
 						}
 
+						if(total_shares > shares) {
+							count_shares += total_shares - shares;
+							if (verbose >= 2)
+							System.out.println("Share Found!! = "+count_shares);
+						}
+						shares = total_shares;
 					}
 
 					if (window != null) {
@@ -520,6 +554,19 @@ public class Main implements Runnable {
 						once = false;
 						window = new StatusWindow(this, gpu_amt);
 					}
+				}
+				
+				if(Calendar.getInstance().get(Calendar.MINUTE) == 0 ) { //Every Hour
+				//if(Calendar.getInstance().get(Calendar.MINUTE) % 10 == 0 ) { //Every 10 mins
+					if(!count_reset) {
+						count_reset = true;
+						System.out.println("Count shares: Last ten mins = "+count_shares);
+						main_share_per_seg.add(count_shares);
+						count_shares = 0D;
+					}
+				}else { 
+					if(count_reset)
+						count_reset = false;
 				}
 			}
 		} catch (ConnectException e) {
