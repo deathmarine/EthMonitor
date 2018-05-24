@@ -3,9 +3,10 @@ A gui to monitor the api port of a Ethminer instance.
 
 **This is the early stages of development. There maybe very drastic changes, issues will not be addressed until a release is generated. Any ideas, comments, or suggestions can be made via inline comments in a commit, a pull request, or issue tracker.**
 
-![screen](https://i.imgur.com/4hxNEIJ.png)
+![screen](https://i.imgur.com/8iFAzj5.png)
 
 
+![screen](https://i.imgur.com/eayAFX6.png)
 
 ## Compilation
 *****
@@ -33,9 +34,23 @@ ethminer.exe -HWMON 1 -RH -G -P stratum+tcp://abcdefghijklmnopqrstuvwxyz12345678
 Point EthMonitor to your server by adding lines to you initialization file (config.ini).
 If you do not have a config.ini one will be generated for you on start up.
 ```
-#IPaddress and port of the server to poll, more than one server line can be added
+## Configuration ##
+#IPaddress and port of the server to pole, more than one server line can be added
 #Example: server={ipaddress}:{port}
 server=127.0.0.1:3333
+
+#Enable Tray Icon, true (default), false
+trayicon=true
+#Enable "AreYouSure" Question for exiting.
+trayicon.question=true
+#Detailed results, includes wattage
+detailed=true
+
+##   Appearance   ##
+#Max hashrate, status gauge (default:200)
+gauge_max.status=200
+#Max hashrate, gpu gauge (default:50)
+gauge_max.gpu=50
 #Poling rate, amount of time in ms to wait between poles
 poling_rate=1000
 #Graphing Points (default:100)
@@ -44,12 +59,7 @@ graph_points=100
 verbose=0
 #Animate gauges, true (default), false
 animate=true
-#Enable Tray Icon, true (default), false
-trayicon=true
-#Enable "AreYouSure" Question for exiting.
-trayicon.question=true
-#Detailed results, includes wattage
-detailed=false
+
 ```
 
 

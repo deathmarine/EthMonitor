@@ -106,7 +106,7 @@ public class Main implements Runnable {
 					System.out.println("[EthMonitor] No Configuration found, generating config.ini");
 					config.createNewFile();
 					BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(config)));
-					bw.write("## Configuration ##"+ 
+					bw.write("## Configuration ##\r\n"+ 
 							"#IPaddress and port of the server to pole, more than one server line can be added\r\n" + 
 							"#Example: server={ipaddress}:{port}\r\n" + 
 							"server=127.0.0.1:3333\r\n\r\n" +
