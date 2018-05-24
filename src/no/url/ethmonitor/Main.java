@@ -115,8 +115,7 @@ public class Main implements Runnable {
 							"#Enable \"AreYouSure\" Question for exiting.\r\n" + 
 							"trayicon.question=true\r\n" + 
 							"#Detailed results, includes wattage\r\n" + 
-							"detailed=true\r\n" +
-					
+							"detailed=true\r\n\r\n" +
 							"##   Appearance   ##\r\n" + 
 							"#Max hashrate, status gauge (default:200)\r\n" + 
 							"gauge_max.status=200\r\n" + 
@@ -125,12 +124,14 @@ public class Main implements Runnable {
 							"#Poling rate, amount of time in ms to wait between poles\r\n" + 
 							"poling_rate=1000\r\n" +
 							"#Graphing Points (default:100)\r\n" + 
-							"graph_points=100" + "#Verbosity of the console, 1=TX/RX info, 2=ResponseParsing\r\n" + 
+							"graph_points=100\r\n" + 
+							"#Verbosity of the console, 1=TX/RX info, 2=ResponseParsing\r\n" + 
 							"verbose=0\r\n" +
 							"#Animate gauges, true (default), false\r\n" + 
 							"animate=true\r\n");
 					bw.close();
 				} catch (IOException e) {
+					Main.showExceptionDialog("Error", e);
 					e.printStackTrace();
 				}
 			}
@@ -172,70 +173,70 @@ public class Main implements Runnable {
 				}
 				br.close();
 			} catch (IOException e) {
+				Main.showExceptionDialog("Error", e);
 				e.printStackTrace();
 			}
 		}
+		if(tray) {
+			if (!SystemTray.isSupported()) {
+				System.out.println("SystemTray is not supported");
+				return;
+			} else {
+				PopupMenu popup = new PopupMenu();
+				Image image = Toolkit.getDefaultToolkit().getImage(this.getClass().getResource("/resources/icon16.png"));
+				TrayIcon trayIcon = new TrayIcon(image);
 
-		if (!SystemTray.isSupported()) {
-			System.out.println("SystemTray is not supported");
-			return;
-		} else {
-			PopupMenu popup = new PopupMenu();
-			Image image = Toolkit.getDefaultToolkit().getImage(this.getClass().getResource("/resources/icon16.png"));
-			TrayIcon trayIcon = new TrayIcon(image);
+				SystemTray tray = SystemTray.getSystemTray();
 
-			SystemTray tray = SystemTray.getSystemTray();
-
-			// Create a pop-up menu components
-			MenuItem aboutItem = new MenuItem("About");
-			aboutItem.addActionListener(new ActionListener() {
-				@Override
-				public void actionPerformed(ActionEvent arg0) {
-					JOptionPane.showMessageDialog(null, "Built by Deathmarine");
-				}
-
-			});
-			popup.add(aboutItem);
-			popup.addSeparator();
-			
-			/*
-			Menu displayMenu = new Menu("Display");
-			MenuItem errorItem = new MenuItem("Error");
-			MenuItem warningItem = new MenuItem("Warning");
-			MenuItem infoItem = new MenuItem("Info");
-			MenuItem noneItem = new MenuItem("None");
-			popup.add(displayMenu);
-			displayMenu.add(errorItem);
-			displayMenu.add(warningItem);
-			displayMenu.add(infoItem);
-			displayMenu.add(noneItem);
-			*/
-			popup.add(animate);
-			popup.addSeparator();
-			
-			MenuItem exitItem = new MenuItem("Exit");
-			exitItem.addActionListener(new ActionListener() {
-				@Override
-				public void actionPerformed(ActionEvent arg0) {
-					if (JOptionPane.showConfirmDialog(null, "Are you sure you want to exit?", "Quit",
-							JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
-						RUNNING = false;
-						System.exit(0);
+				// Create a pop-up menu components
+				MenuItem aboutItem = new MenuItem("About");
+				aboutItem.addActionListener(new ActionListener() {
+					@Override
+					public void actionPerformed(ActionEvent arg0) {
+						JOptionPane.showMessageDialog(null, "Built by Deathmarine");
 					}
+
+				});
+				popup.add(aboutItem);
+				popup.addSeparator();
+				
+				/*
+				Menu displayMenu = new Menu("Display");
+				MenuItem errorItem = new MenuItem("Error");
+				MenuItem warningItem = new MenuItem("Warning");
+				MenuItem infoItem = new MenuItem("Info");
+				MenuItem noneItem = new MenuItem("None");
+				popup.add(displayMenu);
+				displayMenu.add(errorItem);
+				displayMenu.add(warningItem);
+				displayMenu.add(infoItem);
+				displayMenu.add(noneItem);
+				*/
+				popup.add(animate);
+				popup.addSeparator();
+				
+				MenuItem exitItem = new MenuItem("Exit");
+				exitItem.addActionListener(new ActionListener() {
+					@Override
+					public void actionPerformed(ActionEvent arg0) {
+						if (JOptionPane.showConfirmDialog(null, "Are you sure you want to exit?", "Quit",
+								JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+							RUNNING = false;
+							System.exit(0);
+						}
+					}
+
+				});
+				popup.add(exitItem);
+				trayIcon.setPopupMenu(popup);
+				try {
+					tray.add(trayIcon);
+				} catch (AWTException e) {
+					Main.showExceptionDialog("Error", e);
+					System.out.println("TrayIcon could not be added.");
 				}
-
-			});
-			popup.add(exitItem);
-			trayIcon.setPopupMenu(popup);
-
-			try {
-				tray.add(trayIcon);
-			} catch (AWTException e) {
-				System.out.println("TrayIcon could not be added.");
 			}
-
 		}
-
 	}
 
 	public static void main(String[] args) {
