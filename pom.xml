@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>no.url</groupId>
 	<artifactId>ethmonitor</artifactId>
-	<version>0.0.3</version>
+	<version>0.0.4</version>
 	<dependencies>
 		<dependency>
 			<groupId>com.googlecode.json-simple</groupId>
