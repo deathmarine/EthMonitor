@@ -58,28 +58,27 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 public class Main implements Runnable {
-	//Working
+	// Working
 	static String OVERALL_STATUS = "{\"id\":0,\"jsonrpc\":\"2.0\",\"method\": \"miner_getstat1\"}\r\n";
 	static String DETAILED_STATUS = "{\"id\":0,\"jsonrpc\":\"2.0\",\"method\": \"miner_getstathr\"}\r\n";
-	//Do Not Use, Crashes Etherminer
+	// Do Not Use, Crashes Etherminer
 	static String RESTART = "{\"id\":0,\"jsonrpc\":\"2.0\",\"method\": \"miner_restart\"}\r\n";
-	//Do Not Use, Does Nothing
+	// Do Not Use, Does Nothing
 	static String REBOOT = "{\"id\":0,\"jsonrpc\":\"2.0\",\"method\": \"miner_reboot\"}\r\n";
 
 	static boolean RUNNING = true;
 
 	JSONParser parser = new JSONParser();
 	StatusWindow window;
-	
-	//Maybe this would be a good time to consider databasing
+
+	// Maybe this would be a good time to consider databasing
 	List<Status> main_history = new ArrayList<Status>();
 	List<Double> main_temp_history = new ArrayList<Double>();
 	List<Double> main_fan_history = new ArrayList<Double>();
 	List<Double> main_watt_history = new ArrayList<Double>();
 	List<Double> main_share_per_seg = new ArrayList<Double>();
-	
-	
-	//Settings
+
+	// Settings
 	CheckboxMenuItem animate = new CheckboxMenuItem("Animate");
 	boolean tray = true;
 	boolean tray_question = true;
@@ -87,15 +86,14 @@ public class Main implements Runnable {
 	int verbose = 0;
 	int poling_rate = 1000;
 	int graph_points = 100;
-	int gauge_max_status = 200; //Should autoscale but meh
-	int gauge_max_gpu = 50; //Should autoscale but meh
-	
-	
+	int gauge_max_status = 200; // Should autoscale but meh
+	int gauge_max_gpu = 50; // Should autoscale but meh
+
 	Set<Server> servers = new HashSet<Server>();
-	
-	double count_shares = 0; //ten min interval count. Let's see if this can match the pool
+
+	double count_shares = 0; // ten min interval count. Let's see if this can match the pool
 	boolean count_reset = false;
-	
+
 	public Main(String[] args) {
 		if (args.length > 0) {
 
@@ -106,29 +104,18 @@ public class Main implements Runnable {
 					System.out.println("[EthMonitor] No Configuration found, generating config.ini");
 					config.createNewFile();
 					BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(config)));
-					bw.write("## Configuration ##\r\n"+ 
-							"#IPaddress and port of the server to pole, more than one server line can be added\r\n" + 
-							"#Example: server={ipaddress}:{port}\r\n" + 
-							"server=127.0.0.1:3333\r\n\r\n" +
-							"#Enable Tray Icon, true (default), false\r\n" + 
-							"trayicon=true\r\n" + 
-							"#Enable \"AreYouSure\" Question for exiting.\r\n" + 
-							"trayicon.question=true\r\n" + 
-							"#Detailed results, includes wattage\r\n" + 
-							"detailed=true\r\n\r\n" +
-							"##   Appearance   ##\r\n" + 
-							"#Max hashrate, status gauge (default:200)\r\n" + 
-							"gauge_max.status=200\r\n" + 
-							"#Max hashrate, gpu gauge (default:50)\r\n" + 
-							"gauge_max.gpu=50\r\n"+
-							"#Poling rate, amount of time in ms to wait between poles\r\n" + 
-							"poling_rate=1000\r\n" +
-							"#Graphing Points (default:100)\r\n" + 
-							"graph_points=100\r\n" + 
-							"#Verbosity of the console, 1=TX/RX info, 2=ResponseParsing\r\n" + 
-							"verbose=0\r\n" +
-							"#Animate gauges, true (default), false\r\n" + 
-							"animate=true\r\n");
+					bw.write("## Configuration ##\r\n"
+							+ "#IPaddress and port of the server to pole, more than one server line can be added\r\n"
+							+ "#Example: server={ipaddress}:{port}\r\n" + "server=127.0.0.1:3333\r\n\r\n"
+							+ "#Enable Tray Icon, true (default), false\r\n" + "trayicon=true\r\n"
+							+ "#Enable \"AreYouSure\" Question for exiting.\r\n" + "trayicon.question=true\r\n"
+							+ "#Detailed results, includes wattage\r\n" + "detailed=true\r\n\r\n"
+							+ "##   Appearance   ##\r\n" + "#Max hashrate, status gauge (default:200)\r\n"
+							+ "gauge_max.status=200\r\n" + "#Max hashrate, gpu gauge (default:50)\r\n"
+							+ "gauge_max.gpu=50\r\n" + "#Poling rate, amount of time in ms to wait between poles\r\n"
+							+ "poling_rate=1000\r\n" + "#Graphing Points (default:100)\r\n" + "graph_points=100\r\n"
+							+ "#Verbosity of the console, 1=TX/RX info, 2=ResponseParsing\r\n" + "verbose=0\r\n"
+							+ "#Animate gauges, true (default), false\r\n" + "animate=true\r\n");
 					bw.close();
 				} catch (IOException e) {
 					Main.showExceptionDialog("Error", e);
@@ -150,24 +137,24 @@ public class Main implements Runnable {
 							}
 						}
 						switch (kv[0]) {
-							case "gauge_max.status":
-								gauge_max_status = Integer.parseInt(kv[1].trim());
-							case "gauge_max.gpu":
-								gauge_max_gpu = Integer.parseInt(kv[1].trim());
-							case "poling_rate":
-								poling_rate = Integer.parseInt(kv[1].trim());
-							case "graph_points":
-								graph_points = Integer.parseInt(kv[1].trim());								
-							case "verbose":
-								verbose = Integer.parseInt(kv[1].trim());
-							case "animate":
-								animate.setState(kv[1].trim().equalsIgnoreCase("true"));
-							case "trayicon":
-								tray = kv[1].trim().equalsIgnoreCase("true");
-							case "trayicon.question":
-								tray_question = kv[1].trim().equalsIgnoreCase("true");
-							case "detailed":
-								detailed_result = kv[1].trim().equalsIgnoreCase("true");
+						case "gauge_max.status":
+							gauge_max_status = Integer.parseInt(kv[1].trim());
+						case "gauge_max.gpu":
+							gauge_max_gpu = Integer.parseInt(kv[1].trim());
+						case "poling_rate":
+							poling_rate = Integer.parseInt(kv[1].trim());
+						case "graph_points":
+							graph_points = Integer.parseInt(kv[1].trim());
+						case "verbose":
+							verbose = Integer.parseInt(kv[1].trim());
+						case "animate":
+							animate.setState(kv[1].trim().equalsIgnoreCase("true"));
+						case "trayicon":
+							tray = kv[1].trim().equalsIgnoreCase("true");
+						case "trayicon.question":
+							tray_question = kv[1].trim().equalsIgnoreCase("true");
+						case "detailed":
+							detailed_result = kv[1].trim().equalsIgnoreCase("true");
 						}
 					}
 				}
@@ -177,13 +164,14 @@ public class Main implements Runnable {
 				e.printStackTrace();
 			}
 		}
-		if(tray) {
+		if (tray) {
 			if (!SystemTray.isSupported()) {
 				System.out.println("SystemTray is not supported");
 				return;
 			} else {
 				PopupMenu popup = new PopupMenu();
-				Image image = Toolkit.getDefaultToolkit().getImage(this.getClass().getResource("/resources/icon16.png"));
+				Image image = Toolkit.getDefaultToolkit()
+						.getImage(this.getClass().getResource("/resources/icon16.png"));
 				TrayIcon trayIcon = new TrayIcon(image);
 
 				SystemTray tray = SystemTray.getSystemTray();
@@ -199,22 +187,18 @@ public class Main implements Runnable {
 				});
 				popup.add(aboutItem);
 				popup.addSeparator();
-				
+
 				/*
-				Menu displayMenu = new Menu("Display");
-				MenuItem errorItem = new MenuItem("Error");
-				MenuItem warningItem = new MenuItem("Warning");
-				MenuItem infoItem = new MenuItem("Info");
-				MenuItem noneItem = new MenuItem("None");
-				popup.add(displayMenu);
-				displayMenu.add(errorItem);
-				displayMenu.add(warningItem);
-				displayMenu.add(infoItem);
-				displayMenu.add(noneItem);
-				*/
+				 * Menu displayMenu = new Menu("Display"); MenuItem errorItem = new
+				 * MenuItem("Error"); MenuItem warningItem = new MenuItem("Warning"); MenuItem
+				 * infoItem = new MenuItem("Info"); MenuItem noneItem = new MenuItem("None");
+				 * popup.add(displayMenu); displayMenu.add(errorItem);
+				 * displayMenu.add(warningItem); displayMenu.add(infoItem);
+				 * displayMenu.add(noneItem);
+				 */
 				popup.add(animate);
 				popup.addSeparator();
-				
+
 				MenuItem exitItem = new MenuItem("Exit");
 				exitItem.addActionListener(new ActionListener() {
 					@Override
@@ -273,211 +257,210 @@ public class Main implements Runnable {
 
 					int gpu_amt = 0;
 					for (Server server : servers) {
-						if(detailed_result) {
+						if (detailed_result) {
 							JSONObject json_obj = (JSONObject) parser
 									.parse(this.connect(server.getIPAddress(), server.getPort(), DETAILED_STATUS));
-							//Connection check!
-							Object obj = json_obj.get("result");
-							if (obj instanceof JSONObject) {
-								StatusHR status = new StatusHR((JSONObject) obj);
-								main_history.add(status);
-								
-								if (window != null) {
-									for (int i = gpu_amt; i < status.getAmtGPUs() + gpu_amt; i++) {
-										if (animate.getState()) {
-											window.gpu_hashrate.get(i).setValueAnimated(status.getGPURate(i - gpu_amt));
-											window.gpu_fan.get(i).setLcdValueAnimated(status.getSpecificFan(i - gpu_amt));
-											window.gpu_watt.get(i).setLcdValueAnimated(status.getSpecificPower(i - gpu_amt));
-											window.gpu_temp.get(i).setLcdValueAnimated(status.getSpecificTemp(i - gpu_amt));
-										} else {
-											window.gpu_hashrate.get(i).setValue(status.getGPURate(i - gpu_amt));
-											window.gpu_fan.get(i).setLcdValue(status.getSpecificFan(i - gpu_amt));
-											window.gpu_watt.get(i).setLcdValue(status.getSpecificPower(i - gpu_amt));
-											window.gpu_temp.get(i).setLcdValue(status.getSpecificTemp(i - gpu_amt));
-										}
+							if (json_obj != null) {
+								Object obj = json_obj.get("result");
+								if (obj instanceof JSONObject) {
+									StatusHR status = new StatusHR((JSONObject) obj);
+									main_history.add(status);
 
-										ArrayList<Double> hashrate = new ArrayList<Double>();
-										for(Object obj1 : main_history) {
-											if(obj1 instanceof StatusHR) 
-												hashrate.add((double) ((StatusHR) obj1).getGPURate(i));
-											if(obj1 instanceof StatusOne) 
-												hashrate.add((double) ((StatusOne) obj1).getGPURate(i));
+									if (window != null) {
+										for (int i = gpu_amt; i < status.getAmtGPUs() + gpu_amt; i++) {
+											if (animate.getState()) {
+												window.gpu_hashrate.get(i)
+														.setValueAnimated(status.getGPURate(i - gpu_amt));
+												window.gpu_fan.get(i)
+														.setLcdValueAnimated(status.getSpecificFan(i - gpu_amt));
+												window.gpu_watt.get(i)
+														.setLcdValueAnimated(status.getSpecificPower(i - gpu_amt));
+												window.gpu_temp.get(i)
+														.setLcdValueAnimated(status.getSpecificTemp(i - gpu_amt));
+											} else {
+												window.gpu_hashrate.get(i).setValue(status.getGPURate(i - gpu_amt));
+												window.gpu_fan.get(i).setLcdValue(status.getSpecificFan(i - gpu_amt));
+												window.gpu_watt.get(i)
+														.setLcdValue(status.getSpecificPower(i - gpu_amt));
+												window.gpu_temp.get(i).setLcdValue(status.getSpecificTemp(i - gpu_amt));
+											}
+
+											ArrayList<Double> hashrate = new ArrayList<Double>();
+											for (Object obj1 : main_history) {
+												if (obj1 instanceof StatusHR)
+													hashrate.add((double) ((StatusHR) obj1).getGPURate(i));
+												if (obj1 instanceof StatusOne)
+													hashrate.add((double) ((StatusOne) obj1).getGPURate(i));
+											}
+											window.gpu_hashrate_graph.get(i).setScores(hashrate);
+
+											ArrayList<Double> temperature = new ArrayList<Double>();
+											for (Object obj1 : main_history) {
+												if (obj1 instanceof StatusHR)
+													temperature.add((double) ((StatusHR) obj1).getSpecificTemp(i));
+												if (obj1 instanceof StatusOne)
+													temperature.add((double) ((StatusOne) obj1).getSpecificTemp(i));
+											}
+											window.gpu_temperature_graph.get(i).setScores(temperature);
+
+											ArrayList<Double> fan = new ArrayList<Double>();
+											for (Object obj1 : main_history) {
+												if (obj1 instanceof StatusHR)
+													fan.add((double) ((StatusHR) obj1).getSpecificFan(i));
+												if (obj1 instanceof StatusOne)
+													fan.add((double) ((StatusOne) obj1).getSpecificFan(i));
+											}
+											window.gpu_fan_graph.get(i).setScores(fan);
+
+											ArrayList<Double> wattage = new ArrayList<Double>();
+											for (Object obj1 : main_history) {
+												if (obj1 instanceof StatusHR)
+													wattage.add((double) ((StatusHR) obj1).getSpecificPower(i));
+											}
+											window.gpu_wattage_graph.get(i).setScores(wattage);
 										}
-										window.gpu_hashrate_graph.get(i).setScores(hashrate);
-										
-										ArrayList<Double> temperature = new ArrayList<Double>();
-										for(Object obj1 : main_history) {
-											if(obj1 instanceof StatusHR) 
-												temperature.add((double) ((StatusHR) obj1).getSpecificTemp(i));
-											if(obj1 instanceof StatusOne) 
-												temperature.add((double) ((StatusOne) obj1).getSpecificTemp(i));
+									}
+									if (verbose >= 2) {
+										System.out.println("Hashrate: " + status.getHashrate() + "Mh/s");
+										for (int i = 0; i < status.getAmtGPUs(); i++) {
+											System.out.print("G" + i + ": " + status.getGPURate(i) + "Mh/s  ");
 										}
-										window.gpu_temperature_graph.get(i).setScores(temperature);
-										
-										ArrayList<Double> fan = new ArrayList<Double>();
-										for(Object obj1 : main_history) {
-											if(obj1 instanceof StatusHR) 
-												fan.add((double) ((StatusHR) obj1).getSpecificFan(i));
-											if(obj1 instanceof StatusOne) 
-												fan.add((double) ((StatusOne) obj1).getSpecificFan(i));
+										System.out.println();
+										for (int i = 0; i < status.getAmtGPUs(); i++) {
+											System.out
+													.print("W" + i + ": " + status.getSpecificPower(i) + "Watt      ");
 										}
-										window.gpu_fan_graph.get(i).setScores(fan);
-										
-										ArrayList<Double> wattage = new ArrayList<Double>();
-										for(Object obj1 : main_history) {
-											if(obj1 instanceof StatusHR) 
-												wattage.add((double) ((StatusHR) obj1).getSpecificPower(i));
+										for (int i = 0; i < status.getAmtGPUs(); i++) {
+											System.out.print("F" + i + ": " + status.getSpecificFan(i) + "%         ");
 										}
-										window.gpu_wattage_graph.get(i).setScores(wattage);		
+										System.out.println("Avg: " + status.getAvgFan() + "%");
+										for (int i = 0; i < status.getAmtGPUs(); i++) {
+											System.out.print("T" + i + ": " + status.getSpecificTemp(i) + "C         ");
+										}
+										System.out.println("Avg: " + status.getAvgTemp() + "C");
+										System.out.println("Sharerate: " + status.getSharesPerMin() + " S/min");
+										System.out.println();
 									}
-								}
-								if (verbose >= 2) {
-									System.out.println("Hashrate: " + status.getHashrate() + "Mh/s");
-									for (int i = 0; i < status.getAmtGPUs(); i++) {
-										System.out.print("G" + i + ": " + status.getGPURate(i) + "Mh/s  ");
+
+									total_hashrate += status.getHashrate();
+									total_shares += status.getShares();
+									avg_fan += status.getAvgFan();
+									total_watt += status.getTotalPower();
+									avg_temp += status.getAvgTemp();
+									gpu_amt += status.getAmtGPUs();
+
+									/*
+									 * 
+									 * if(status.getHashrate() < 1) { this.connect(server.ip_address, server.port,
+									 * RESTART); }
+									 * 
+									 */
+
+									if (longest_time < status.getRuntime()) {
+										longest_time = status.getRuntime();
 									}
-									System.out.println();
-									for (int i = 0; i < status.getAmtGPUs(); i++) {
-										System.out.print("W" + i + ": " + status.getSpecificPower(i) + "Watt      ");
+									if (largest_share < status.getSharesPerMin()) {
+										largest_share = status.getSharesPerMin();
 									}
-									for (int i = 0; i < status.getAmtGPUs(); i++) {
-										System.out.print("F" + i + ": " + status.getSpecificFan(i) + "%         ");
-									}
-									System.out.println("Avg: " + status.getAvgFan() + "%");
-									for (int i = 0; i < status.getAmtGPUs(); i++) {
-										System.out.print("T" + i + ": " + status.getSpecificTemp(i) + "C         ");
-									}
-									System.out.println("Avg: " + status.getAvgTemp() + "C");
-									System.out.println("Sharerate: " + status.getSharesPerMin() + " S/min");
-									System.out.println();
+
 								}
 
-								total_hashrate += status.getHashrate();
-								total_shares += status.getShares();
-								avg_fan += status.getAvgFan();
-								total_watt += status.getTotalPower();
-								avg_temp += status.getAvgTemp();
-								gpu_amt += status.getAmtGPUs();
-
-								/*
-								 * 
-								 * if(status.getHashrate() < 1) { 
-								 * 		this.connect(server.ip_address, server.port, RESTART); 
-								 * }
-								 * 
-								 */
-
-								if (longest_time < status.getRuntime()) {
-									longest_time = status.getRuntime();
-								}
-								if (largest_share < status.getSharesPerMin()) {
-									largest_share = status.getSharesPerMin();
-								}
-								
-								
 							}
-						}else {
-							
+						} else {
+
 							JSONObject json_obj = (JSONObject) parser
 									.parse(this.connect(server.getIPAddress(), server.getPort(), OVERALL_STATUS));
-							Object obj = json_obj.get("result");
-							if (obj instanceof JSONArray) {
-								JSONArray jarray = (JSONArray) obj;
-								StatusOne status = new StatusOne(jarray);
-								main_history.add(status);
-								if (window != null) {
-									for (int i = gpu_amt; i < status.getAmtGPUs() + gpu_amt; i++) {
-										
-										if (animate.getState()) {
-											window.gpu_hashrate.get(i).setValueAnimated(status.getGPURate(i - gpu_amt));
-											window.gpu_fan.get(i).setLcdValueAnimated(status.getSpecificFan(i - gpu_amt));
-											window.gpu_temp.get(i).setLcdValueAnimated(status.getSpecificTemp(i - gpu_amt));
-										} else {
-											window.gpu_hashrate.get(i).setValue(status.getGPURate(i - gpu_amt));
-											window.gpu_fan.get(i).setLcdValue(status.getSpecificFan(i - gpu_amt));
-											window.gpu_temp.get(i).setLcdValue(status.getSpecificTemp(i - gpu_amt));
-										}
+							if (json_obj != null) {
+								Object obj = json_obj.get("result");
+								if (obj instanceof JSONArray) {
+									JSONArray jarray = (JSONArray) obj;
+									StatusOne status = new StatusOne(jarray);
+									main_history.add(status);
+									if (window != null) {
+										for (int i = gpu_amt; i < status.getAmtGPUs() + gpu_amt; i++) {
 
-										ArrayList<Double> hashrate = new ArrayList<Double>();
-										for(Object obj1 : main_history) {
-											if(obj1 instanceof StatusHR) 
-												hashrate.add((double) ((StatusHR) obj1).getGPURate(i));
-											if(obj1 instanceof StatusOne) 
-												hashrate.add((double) ((StatusOne) obj1).getGPURate(i));
-										}
-										window.gpu_hashrate_graph.get(i).setScores(hashrate);
-										
-										ArrayList<Double> temperature = new ArrayList<Double>();
-										for(Object obj1 : main_history) {
-											if(obj1 instanceof StatusHR) 
-												temperature.add((double) ((StatusHR) obj1).getSpecificTemp(i));
-											if(obj1 instanceof StatusOne) 
-												temperature.add((double) ((StatusOne) obj1).getSpecificTemp(i));
-										}
-										window.gpu_temperature_graph.get(i).setScores(temperature);
-										
-										ArrayList<Double> fan = new ArrayList<Double>();
-										for(Object obj1 : main_history) {
-											if(obj1 instanceof StatusHR) 
-												fan.add((double) ((StatusHR) obj1).getSpecificFan(i));
-											if(obj1 instanceof StatusOne) 
-												fan.add((double) ((StatusOne) obj1).getSpecificFan(i));
-										}
-										window.gpu_fan_graph.get(i).setScores(fan);
-									}
-								}
-								if (verbose >= 2) {
-									System.out.println("Hashrate: " + status.getHashrate() + "Mh/s");
-									for (int i = 0; i < status.getAmtGPUs(); i++) {
-										System.out.print("G" + i + ": " + status.getGPURate(i) + "Mh/s  ");
-									}
-									System.out.println();
-									for (int i = 0; i < status.getAmtGPUs(); i++) {
-										System.out.print("F" + i + ": " + status.getSpecificFan(i) + "%         ");
-									}
-									System.out.println("Avg: " + status.getAvgFan() + "%");
-									for (int i = 0; i < status.getAmtGPUs(); i++) {
-										System.out.print("T" + i + ": " + status.getSpecificTemp(i) + "C         ");
-									}
-									System.out.println("Avg: " + status.getAvgTemp() + "C");
-									System.out.println("Sharerate: " + status.getSharesPerMin() + " S/min");
-									System.out.println();
-								}
+											if (animate.getState()) {
+												window.gpu_hashrate.get(i)
+														.setValueAnimated(status.getGPURate(i - gpu_amt));
+												window.gpu_fan.get(i)
+														.setLcdValueAnimated(status.getSpecificFan(i - gpu_amt));
+												window.gpu_temp.get(i)
+														.setLcdValueAnimated(status.getSpecificTemp(i - gpu_amt));
+											} else {
+												window.gpu_hashrate.get(i).setValue(status.getGPURate(i - gpu_amt));
+												window.gpu_fan.get(i).setLcdValue(status.getSpecificFan(i - gpu_amt));
+												window.gpu_temp.get(i).setLcdValue(status.getSpecificTemp(i - gpu_amt));
+											}
 
-								total_hashrate += status.getHashrate();
-								total_shares += status.getShares();
-								avg_fan += status.getAvgFan();
-								avg_temp += status.getAvgTemp();
-								gpu_amt += status.getAmtGPUs();
+											ArrayList<Double> hashrate = new ArrayList<Double>();
+											for (Object obj1 : main_history) {
+												if (obj1 instanceof StatusHR)
+													hashrate.add((double) ((StatusHR) obj1).getGPURate(i));
+												if (obj1 instanceof StatusOne)
+													hashrate.add((double) ((StatusOne) obj1).getGPURate(i));
+											}
+											window.gpu_hashrate_graph.get(i).setScores(hashrate);
 
-								/*
-								 * 
-								 * if(status.getHashrate() < 1) { 
-								 * 		this.connect(server.ip_address, server.port, RESTART); 
-								 * }
-								 * 
-								 */
+											ArrayList<Double> temperature = new ArrayList<Double>();
+											for (Object obj1 : main_history) {
+												if (obj1 instanceof StatusHR)
+													temperature.add((double) ((StatusHR) obj1).getSpecificTemp(i));
+												if (obj1 instanceof StatusOne)
+													temperature.add((double) ((StatusOne) obj1).getSpecificTemp(i));
+											}
+											window.gpu_temperature_graph.get(i).setScores(temperature);
 
-								if (longest_time < status.getRuntime()) {
-									longest_time = status.getRuntime();
-								}
-								if (largest_share < status.getSharesPerMin()) {
-									largest_share = status.getSharesPerMin();
+											ArrayList<Double> fan = new ArrayList<Double>();
+											for (Object obj1 : main_history) {
+												if (obj1 instanceof StatusHR)
+													fan.add((double) ((StatusHR) obj1).getSpecificFan(i));
+												if (obj1 instanceof StatusOne)
+													fan.add((double) ((StatusOne) obj1).getSpecificFan(i));
+											}
+											window.gpu_fan_graph.get(i).setScores(fan);
+										}
+									}
+									if (verbose >= 2) {
+										System.out.println("Hashrate: " + status.getHashrate() + "Mh/s");
+										for (int i = 0; i < status.getAmtGPUs(); i++) {
+											System.out.print("G" + i + ": " + status.getGPURate(i) + "Mh/s  ");
+										}
+										System.out.println();
+										for (int i = 0; i < status.getAmtGPUs(); i++) {
+											System.out.print("F" + i + ": " + status.getSpecificFan(i) + "%         ");
+										}
+										System.out.println("Avg: " + status.getAvgFan() + "%");
+										for (int i = 0; i < status.getAmtGPUs(); i++) {
+											System.out.print("T" + i + ": " + status.getSpecificTemp(i) + "C         ");
+										}
+										System.out.println("Avg: " + status.getAvgTemp() + "C");
+										System.out.println("Sharerate: " + status.getSharesPerMin() + " S/min");
+										System.out.println();
+									}
+
+									total_hashrate += status.getHashrate();
+									total_shares += status.getShares();
+									avg_fan += status.getAvgFan();
+									avg_temp += status.getAvgTemp();
+									gpu_amt += status.getAmtGPUs();
+
+									if (longest_time < status.getRuntime()) {
+										longest_time = status.getRuntime();
+									}
+									if (largest_share < status.getSharesPerMin()) {
+										largest_share = status.getSharesPerMin();
+									}
 								}
 							}
-							
 						}
-
-						if(total_shares > shares) {
+						if (total_shares > shares) {
 							count_shares += total_shares - shares;
 							if (verbose >= 2)
-							System.out.println("Share Found!! = "+count_shares);
+								System.out.println("Share Found!! = " + count_shares);
 						}
 						shares = total_shares;
 					}
-
 					if (window != null) {
-						
 						if (!window.isShowing()) {
 							System.exit(0);
 						}
@@ -485,67 +468,67 @@ public class Main implements Runnable {
 							window.total_hashrate.setValueAnimated(total_hashrate);
 							window.avg_fan_display.setLcdValueAnimated(avg_fan / servers.size());
 							window.avg_temp_display.setLcdValueAnimated(avg_temp / servers.size());
-							if(detailed_result)
+							if (detailed_result)
 								window.total_wattage_display.setLcdValueAnimated(total_watt);
 							ArrayList<Double> list = new ArrayList<Double>();
-							for(Object obj : main_history) {
-								if(obj instanceof StatusHR) 
+							for (Object obj : main_history) {
+								if (obj instanceof StatusHR)
 									list.add((double) ((StatusHR) obj).getHashrate());
-								if(obj instanceof StatusOne) 
+								if (obj instanceof StatusOne)
 									list.add((double) ((StatusOne) obj).getHashrate());
 							}
 							window.main_hashrate_graph.setScores(list);
-							
+
 							window.running_time.setLcdValueAnimated(longest_time);
 							window.shares.setLcdValueAnimated(total_shares);
 							window.shares_per_min.setLcdValueAnimated(largest_share);
-						}else {
+						} else {
 							window.total_hashrate.setValue(total_hashrate);
 							window.avg_fan_display.setLcdValue(avg_fan / servers.size());
 							window.avg_temp_display.setLcdValue(avg_temp / servers.size());
-							if(detailed_result)
+							if (detailed_result)
 								window.total_wattage_display.setLcdValue(total_watt);
 							window.running_time.setLcdValue(longest_time);
 							window.shares.setLcdValue(total_shares);
 							window.shares_per_min.setLcdValue(largest_share);
-							
+
 						}
 						ArrayList<Double> hashrate = new ArrayList<Double>();
-						for(Object obj : main_history) {
-							if(obj instanceof StatusHR) 
+						for (Object obj : main_history) {
+							if (obj instanceof StatusHR)
 								hashrate.add((double) ((StatusHR) obj).getHashrate());
-							if(obj instanceof StatusOne) 
+							if (obj instanceof StatusOne)
 								hashrate.add((double) ((StatusOne) obj).getHashrate());
 						}
 						window.main_hashrate_graph.setScores(hashrate);
-						
+
 						ArrayList<Double> temperature = new ArrayList<Double>();
-						for(Object obj : main_history) {
-							if(obj instanceof StatusHR) 
+						for (Object obj : main_history) {
+							if (obj instanceof StatusHR)
 								temperature.add((double) ((StatusHR) obj).getAvgTemp());
-							if(obj instanceof StatusOne) 
+							if (obj instanceof StatusOne)
 								temperature.add((double) ((StatusOne) obj).getAvgTemp());
 						}
 						window.main_temperature_graph.setScores(temperature);
-						
+
 						ArrayList<Double> fan = new ArrayList<Double>();
-						for(Object obj : main_history) {
-							if(obj instanceof StatusHR) 
+						for (Object obj : main_history) {
+							if (obj instanceof StatusHR)
 								fan.add((double) ((StatusHR) obj).getAvgFan());
-							if(obj instanceof StatusOne) 
+							if (obj instanceof StatusOne)
 								fan.add((double) ((StatusOne) obj).getAvgFan());
 						}
 						window.main_fan_graph.setScores(fan);
 
-						if(detailed_result) {
+						if (detailed_result) {
 							ArrayList<Double> wattage = new ArrayList<Double>();
-							for(Object obj : main_history) {
-								if(obj instanceof StatusHR) 
+							for (Object obj : main_history) {
+								if (obj instanceof StatusHR)
 									wattage.add((double) ((StatusHR) obj).getTotalPower());
 							}
-							window.main_wattage_graph.setScores(wattage);								
+							window.main_wattage_graph.setScores(wattage);
 						}
-						
+
 						if (main_history.size() > graph_points) {
 							main_history.remove(0);
 						}
@@ -556,22 +539,25 @@ public class Main implements Runnable {
 						window = new StatusWindow(this, gpu_amt);
 					}
 				}
-				
-				if(Calendar.getInstance().get(Calendar.MINUTE) == 0 ) { //Every Hour
-				//if(Calendar.getInstance().get(Calendar.MINUTE) % 10 == 0 ) { //Every 10 mins
-					if(!count_reset) {
+
+				if (Calendar.getInstance().get(Calendar.MINUTE) == 0) { // Every Hour
+					// if(Calendar.getInstance().get(Calendar.MINUTE) % 10 == 0 ) { //Every 10 mins
+					int hour = Calendar.getInstance().get(Calendar.HOUR)-1;
+					if(hour < 0) hour = 11;
+					if (!count_reset) {
 						count_reset = true;
-						System.out.println("Count shares: Last ten mins = "+count_shares);
+						System.out.println((hour<10?"0"+hour:hour)+":00 Share Count = " + count_shares);
 						main_share_per_seg.add(count_shares);
 						count_shares = 0D;
 					}
-				}else { 
-					if(count_reset)
+				} else {
+					if (count_reset)
 						count_reset = false;
 				}
 			}
 		} catch (ConnectException e) {
-			JOptionPane.showMessageDialog(null, "Unable to connect to one or more servers,\nCheck your config.ini and restart.");
+			JOptionPane.showMessageDialog(null,
+					"Unable to connect to one or more servers,\nCheck your config.ini and restart.");
 			System.exit(0);
 		} catch (IOException | ParseException e) {
 			e.printStackTrace();
@@ -599,11 +585,10 @@ public class Main implements Runnable {
 		sock.close();
 		return line;
 	}
-	
+
 	/**
-	 * Method allows for users to copy the stacktrace for reporting any issues.
-	 * Add Cool Hyperlink Enhanced for mouse users.
-	 * Borrowed from Luyten
+	 * Method allows for users to copy the stacktrace for reporting any issues. Add
+	 * Cool Hyperlink Enhanced for mouse users. Borrowed from Luyten
 	 * 
 	 * @param message
 	 * @param e
