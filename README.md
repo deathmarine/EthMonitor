@@ -1,7 +1,7 @@
 # EthMonitor
 A gui to monitor the api port of a Ethminer instance.
 
-**This is the early stages of development. There maybe very drastic changes, issues will not be addressed until a release is generated. Any ideas, comments, or suggestions can be made via inline comments in a commit, a pull request, or issue tracker.**
+**Any ideas, comments, or suggestions can be made via inline comments in a commit, a pull request, or issue tracker.**
 
 ![screen](https://i.imgur.com/8iFAzj5.png)
 
