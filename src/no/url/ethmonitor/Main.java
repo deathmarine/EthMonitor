@@ -25,14 +25,12 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -55,7 +53,6 @@ import javax.swing.text.DefaultEditorKit;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 
 public class Main implements Runnable {
 	// Working
@@ -65,10 +62,12 @@ public class Main implements Runnable {
 	static String RESTART = "{\"id\":0,\"jsonrpc\":\"2.0\",\"method\": \"miner_restart\"}\r\n";
 	// Do Not Use, Does Nothing
 	static String REBOOT = "{\"id\":0,\"jsonrpc\":\"2.0\",\"method\": \"miner_reboot\"}\r\n";
-
+	
 	static boolean RUNNING = true;
-
+	static boolean DISCONNECTED = false;
+	static boolean RECONNECT = false;
 	JSONParser parser = new JSONParser();
+	
 	StatusWindow window;
 
 	// Maybe this would be a good time to consider databasing
@@ -93,6 +92,12 @@ public class Main implements Runnable {
 
 	double count_shares = 0; // ten min interval count. Let's see if this can match the pool
 	boolean count_reset = false;
+	
+
+	private Socket sock; //Keep socket open.
+	private BufferedWriter bw; //Closing the writer terminates the socket
+	private BufferedReader br;
+	
 
 	public Main(String[] args) {
 		if (args.length > 0) {
@@ -228,8 +233,14 @@ public class Main implements Runnable {
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 			// SwingUtilities.invokeLater(new Main(args));
-			Main main = new Main(args);
-			new Thread(main).start();
+			SwingUtilities.invokeLater(new Runnable() {
+
+				@Override
+				public void run() {
+					new Thread(new Main(args)).start();					
+				}
+				
+			});
 		} catch (Exception e) {
 			Main.showExceptionDialog("Error", e);
 			e.printStackTrace();
@@ -247,7 +258,7 @@ public class Main implements Runnable {
 			while (RUNNING) {
 				if (System.currentTimeMillis() - time >= poling_rate) {
 					time = System.currentTimeMillis();
-					double total_hashrate = 0;
+					float total_hashrate = 0;
 					double avg_temp = 0;
 					double avg_fan = 0;
 					double total_watt = 0; // TODO: When Ethminer issues are resolved.
@@ -258,8 +269,10 @@ public class Main implements Runnable {
 					int gpu_amt = 0;
 					for (Server server : servers) {
 						if (detailed_result) {
-							JSONObject json_obj = (JSONObject) parser
-									.parse(this.connect(server.getIPAddress(), server.getPort(), DETAILED_STATUS));
+							String data = this.connect(server.getIPAddress(), server.getPort(), DETAILED_STATUS);
+							if(data == null)
+								continue;
+							JSONObject json_obj = (JSONObject) parser.parse(data);
 							if (json_obj != null) {
 								Object obj = json_obj.get("result");
 								if (obj instanceof JSONObject) {
@@ -320,7 +333,7 @@ public class Main implements Runnable {
 											window.gpu_wattage_graph.get(i).setScores(wattage);
 										}
 									}
-									if (verbose >= 2) {
+									if (verbose >= 3) {
 										System.out.println("Hashrate: " + status.getHashrate() + "Mh/s");
 										for (int i = 0; i < status.getAmtGPUs(); i++) {
 											System.out.print("G" + i + ": " + status.getGPURate(i) + "Mh/s  ");
@@ -420,7 +433,7 @@ public class Main implements Runnable {
 											window.gpu_fan_graph.get(i).setScores(fan);
 										}
 									}
-									if (verbose >= 2) {
+									if (verbose >= 3) {
 										System.out.println("Hashrate: " + status.getHashrate() + "Mh/s");
 										for (int i = 0; i < status.getAmtGPUs(); i++) {
 											System.out.print("G" + i + ": " + status.getGPURate(i) + "Mh/s  ");
@@ -555,35 +568,54 @@ public class Main implements Runnable {
 						count_reset = false;
 				}
 			}
-		} catch (ConnectException e) {
-			JOptionPane.showMessageDialog(null,
-					"Unable to connect to one or more servers,\nCheck your config.ini and restart.");
-			System.exit(0);
-		} catch (IOException | ParseException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 			Main.showExceptionDialog("Error", e);
 			System.exit(0);
 		}
 	}
-
+	
 	public String connect(String ip_address, int port, String command)
-			throws UnknownHostException, IOException, ParseException {
-		Socket sock = new Socket(InetAddress.getByName(ip_address), port);
-		BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(sock.getOutputStream()));
-		if (verbose >= 1)
-			System.out.print("[Client] Sending: " + command);
-		bw.write(command);
-		bw.flush();
-		BufferedReader br = new BufferedReader(new InputStreamReader(sock.getInputStream()));
-		String line = br.readLine();
-		if (verbose >= 1) {
-			System.out.print("[Client] Receiving: ");
-			System.out.println(line);
+			throws UnknownHostException {
+		try {
+			if(sock == null || RECONNECT) {
+				if (verbose >= 1) {
+					System.out.println("[Socket] Opening Socket to "+ip_address+":"+port+" !");
+				}
+				sock = new Socket(InetAddress.getByName(ip_address), port);
+				RECONNECT = false;
+			}
+			BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(sock.getOutputStream()));
+		
+			if (verbose >= 2)
+				System.out.print("[Socket][Writer] Sending: " + command);
+			bw.write(command);
+			bw.flush();
+			
+			BufferedReader br = new BufferedReader(new InputStreamReader(sock.getInputStream()));
+			String line = br.readLine();
+			if (verbose >= 2) {
+				System.out.print("[Socket][Reader] Receiving: ");
+				System.out.println(line);
+			}
+			DISCONNECTED = false;
+			return line;			
+		} catch (IOException e) {
+			if(!DISCONNECTED) {
+				DISCONNECTED = true;
+				RECONNECT = true;
+				JOptionPane.showMessageDialog(window, "Disconnected from Server!");
+				System.out.println("[Socket] Disconnected from server!");
+
+			}
+
+			if (verbose >= 2)
+				System.out.print(e.getMessage());
 		}
-		bw.close();
-		br.close();
-		sock.close();
-		return line;
+		//bw.close();
+		//br.close();
+		//sock.close();
+		return "{}";
 	}
 
 	/**

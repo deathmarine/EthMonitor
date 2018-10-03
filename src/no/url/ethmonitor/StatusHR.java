@@ -16,7 +16,7 @@ public class StatusHR extends Status{
 				this.setRuntime(Integer.valueOf((String) object.get("runtime")));
 			}
 			if(object.containsKey("ethhashrate")) {
-				this.setHashrate((long) object.get("ethhashrate") / 1000000);
+				this.setHashrate((long) object.get("ethhashrate") / 1000000f);
 			}
 			if(object.containsKey("ethshares")) {
 				this.setShares((this.safeLongToInt((long) object.get("ethshares"))));
@@ -123,7 +123,7 @@ public class StatusHR extends Status{
 		public double getGPURate(int gpu) {
 			JSONArray array = (JSONArray) object.get("ethhashrates");
 			if(array != null)
-				return ((long) array.get(gpu)) / 1000000d;
+				return ((double) array.get(gpu)) / 1000000d;
 			return 0D;
 		}
 
